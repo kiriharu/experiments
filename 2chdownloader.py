@@ -77,20 +77,25 @@ def main():
     print("Type thread as 'board/thread' for downloading one thread")
     print("Type 'exit' for exit")
     while True:
-        line = input("> ")
-        if line == "exit":
-            return
-        elif re.match(r"^(\w+)$", line):
-            for fileobj in iter_files(line):
-                download_file(fileobj)
-            print("[I] Done")
-        elif re.match(r"^(\w+)\/(\d+)$", line):
-            board, thread = line.split("/")
-            for fileobj in iter_files(board, int(thread)):
-                download_file(fileobj)
-            print("[I] Done")
-        else:
-            print("Something went wrong")
+        try:
+            line = input("> ")
+            if line == "exit":
+                return
+            elif re.match(r"^(\w+)$", line):
+                for fileobj in iter_files(line):
+                    download_file(fileobj)
+                print("[I] Done")
+            elif re.match(r"^(\w+)\/(\d+)$", line):
+                board, thread = line.split("/")
+                for fileobj in iter_files(board, int(thread)):
+                    download_file(fileobj)
+                print("[I] Done")
+            else:
+                print("Something went wrong")
+        except KeyboardInterrupt:
+            print("[I] Type 'exit' for exit")
+        except Exception as e:
+            print("[E]", e)
         
 
 if __name__ == '__main__':
