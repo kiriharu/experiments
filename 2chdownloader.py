@@ -1,65 +1,97 @@
-"""Данная утилита предназначена для скачивания файлов с имиджборды 2ch.hk."""
+#!/usr/bin/env python3
+"""
+Данная утилита предназначена для скачивания файлов с имиджборды 2ch.hk.
 
+Created by https://github.com/kiriharu
+Re-writed by https://github.com/undefinedvalue0103
+"""
 import requests
 import traceback
+import re
 
-def content_from_thread():
+def download_file(fileobject: dict):
+    """
+    Download file. Parameters given in file object
+    @param fileobject: dict{path,fullname,md5}
+    """
+    url = "https://2ch.hk" + fileobject["path"]
+    fallback = fileobject["name"]
+    name = fileobject["md5"] + " " + fileobject.get("fullname", fallback)
     try:
-        threadlink = input('Enter link to thread like https://2ch.hk/board/res/threadid.json: ')
-        getpost = requests.get(threadlink).json()
-    except:
-        print('Exception occurred: ', traceback.format_exc())
-    for threads in getpost['threads']:
-        for posts in threads['posts']:
-            for files in posts['files']:
-                try:
-                    with open(files['fullname'], "wb") as file:
-                        getfile = requests.get('https://2ch.hk/' + files['path'])
-                        file.write(getfile.content)
-                        file.close()
-                        print('Saved file: ', files['fullname'])
-                except IOError:
-                    print('Path not found or permission denied')
-    exit('All downloaded!')
+        with open(name, "wb") as fd:
+            with requests.get(url, stream=True) as rq:
+                expected_size = int(rq.headers.get("Content-Length", 1))
+                downloaded = 0
+                for chunk in rq.iter_content(chunk_size=8192):
+                    downloaded += len(chunk)
+                    progress = downloaded / expected_size
+                    width = int(progress * 10)
+                    line = "[I] %35s: [%s%s] %7.3f%%" % (fileobject["path"],
+                                                     "=" * width,
+                                                     " " * (10 - width),
+                                                     progress * 100)
+    
+                    print(line, end="\r", flush=1)
+                    fd.write(chunk)
+                    fd.flush()
+    except IOError as e:
+        print("[E] Filed to open file %r: %r" % (name, e))
+    except Exception as e:
+        print("[E] Exception occurred: %r" % e)
+    else:
+        print("")
 
-def all_content_from_board():
-    bname =  input('Enter board name: ')
-    print('All files will saved to the folder, where script is saved ')
-    for i in range(1, 10):
-        if i == 1:
-            i = 'index'
-        try:
-            getthreads = requests.get('https://2ch.hk/%s/%s.json' % (bname, i)).json()
-            print('Getting https://2ch.hk/%s/%s.json' % (bname, i))
-            for thread in getthreads['threads']:
-                thread_num = thread['thread_num']
-                getposts = requests.get('https://2ch.hk/%s/res/%s.json' % (bname, thread_num)).json()
-                for threads in getposts['threads']:
-                    for posts in threads['posts']:
-                        for files in posts['files']:
-                            try:
-                                with open(files['fullname'], "wb") as file:
-                                    getfile = requests.get('https://2ch.hk/' + files['path'])
-                                    file.write(getfile.content)
-                                    file.close()
-                                    print('Saved file: ', files['fullname'])
-                            except IOError:
-                                print('Path not found or permission denied')
-        except:
-            print(traceback.format_exc())
-    exit('All downloaded!')
+def iter_files(board: str, thread: int=None, status:str=None):
+    """
+    Yields files from thread
+    @param board: str, board letters (example, 'b')
+    @param thread: int/None, thread ID. If ommited, all threads given.
+    @param status: str/None, status string. used for progress
+
+    @returns generator(fileobject:dict)
+    """
+    if thread is not None:
+        thread_url = f"https://2ch.hk/{board}/res/{thread}.json"
+        print("[I] Getting", thread_url, status or "")
+        data = requests.get(thread_url).json()
+        for thread in data["threads"]:
+            for post in thread["posts"]:
+                for fileobj in post["files"]:
+                    if fileobj["type"] != 100:
+                        yield fileobj
+    else:
+        for index in range(1, 10):
+            index = "index" if index == 1 else index
+            page_url = f"https://2ch.hk/{board}/{index}.json"
+            print("[I] Getting", page_url)
+            data = requests.get(page_url).json()
+            threads = len(data["threads"])
+            for i, thread in enumerate(data["threads"], 1):
+                thread_num = thread["thread_num"]
+                for fileobj in iter_files(board, thread_num, "%3d/%3d"%(i, threads)):
+                    yield fileobj
 
 def main():
-    reply = input('Welcome to 2ch content downloader! Enter the option that you need\n'
-          '1) Download content from board\n'
-          '2) Download content from thread\n')
-    if reply == '1':
-        all_content_from_board()
-    if reply == '2':
-        content_from_thread()
-    else:
-        print('Please type 1 or 2.')
-        main()
+    print("Welcome to 2chdownloader!")
+    print("Type board name as 'name' for downloading entire board")
+    print("Type thread as 'board/thread' for downloading one thread")
+    print("Type 'exit' for exit")
+    while True:
+        line = input("> ")
+        if line == "exit":
+            return
+        elif re.match(r"^(\w+)$", line):
+            for fileobj in iter_files(line):
+                download_file(fileobj)
+            print("[I] Done")
+        elif re.match(r"^(\w+)\/(\d+)$", line):
+            board, thread = line.split("/")
+            for fileobj in iter_files(board, int(thread)):
+                download_file(fileobj)
+            print("[I] Done")
+        else:
+            print("Something went wrong")
+        
 
 if __name__ == '__main__':
     main()
