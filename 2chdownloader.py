@@ -6,15 +6,17 @@ Created by https://github.com/kiriharu
 Re-writed by https://github.com/undefinedvalue0103
 """
 import requests
-import traceback
 import re
+
+SITE = "https://2ch.hk"
+
 
 def download_file(fileobject: dict):
     """
     Download file. Parameters given in file object
     @param fileobject: dict{path,fullname,md5}
     """
-    url = "https://2ch.hk" + fileobject["path"]
+    url = SITE + fileobject["path"]
     fallback = fileobject["name"]
     name = fileobject["md5"] + " " + fileobject.get("fullname", fallback)
     try:
@@ -27,11 +29,11 @@ def download_file(fileobject: dict):
                     progress = downloaded / expected_size
                     width = int(progress * 10)
                     line = "[I] %35s: [%s%s] %7.3f%%" % (fileobject["path"],
-                                                     "=" * width,
-                                                     " " * (10 - width),
-                                                     progress * 100)
+                                                         "=" * width,
+                                                         " " * (10 - width),
+                                                         progress * 100)
     
-                    print(line, end="\r", flush=1)
+                    print(line, end="\r", flush=True)
                     fd.write(chunk)
                     fd.flush()
     except IOError as e:
@@ -41,7 +43,8 @@ def download_file(fileobject: dict):
     else:
         print("")
 
-def iter_files(board: str, thread: int=None, status:str=None):
+
+def iter_files(board: str, thread: int = None, status: str = None):
     """
     Yields files from thread
     @param board: str, board letters (example, 'b')
@@ -51,7 +54,7 @@ def iter_files(board: str, thread: int=None, status:str=None):
     @returns generator(fileobject:dict)
     """
     if thread is not None:
-        thread_url = f"https://2ch.hk/{board}/res/{thread}.json"
+        thread_url = f"{SITE}/{board}/res/{thread}.json"
         print("[I] Getting", thread_url, status or "")
         data = requests.get(thread_url).json()
         for thread in data["threads"]:
@@ -62,14 +65,15 @@ def iter_files(board: str, thread: int=None, status:str=None):
     else:
         for index in range(1, 10):
             index = "index" if index == 1 else index
-            page_url = f"https://2ch.hk/{board}/{index}.json"
+            page_url = f"{SITE}/{board}/{index}.json"
             print("[I] Getting", page_url)
             data = requests.get(page_url).json()
             threads = len(data["threads"])
             for i, thread in enumerate(data["threads"], 1):
                 thread_num = thread["thread_num"]
-                for fileobj in iter_files(board, thread_num, "%3d/%3d"%(i, threads)):
+                for fileobj in iter_files(board, thread_num, "%3d/%3d" % (i, threads)):
                     yield fileobj
+
 
 def main():
     print("Welcome to 2chdownloader!")
