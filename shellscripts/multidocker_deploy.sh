@@ -18,7 +18,7 @@ Wants=network-online.target
 
 [Service]
 Type=notify
-ExecStart=/usr/bin/dockerd -H unix:// --containerd=/run/containerd/containerd.sock \
+ExecStart=/usr/bin/dockerd --containerd=/run/containerd/containerd.sock \
                   --userns-remap %i \
                   --host unix:///var/run/docker-%i.sock \
                   --pidfile /var/run/docker-%i.pid
