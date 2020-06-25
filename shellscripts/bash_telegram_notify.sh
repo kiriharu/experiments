@@ -21,13 +21,12 @@ if [[ -z $TOKEN ]] || [[ -z $RECIPIENTS_ID ]] ; then
 fi
 
 function send_message(){
-  curl -s -X POST \
-  -Ftext="`cat`" -Fchat_id=$1 -Fparse_mode="Markdown"\
+  curl -s -X POST -Ftext=\<-  -Fchat_id=$1 \
+  -Fparse_mode="html" \
   "$API_URL/$TOKEN/sendMessage"
 }
 
 for RECIPIENT in "${RECIPIENTS_ID[@]}"
 do
-  echo $TEXT | send_message $RECIPIENT
+  echo "$TEXT" | send_message $RECIPIENT
 done
-
