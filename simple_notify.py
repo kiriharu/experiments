@@ -3,7 +3,7 @@
 1) Импортируем в своем скрипте сервис и создаем его объект:
 tg = Telegram("@somechannel", "bot_token")
 2) Создаем объект нотификаций и пишем туда наши сервисы. Их может быть сколько угодно.
-notify = n = Notify("bot1", [tg])
+notify = Notify("bot1", [tg])
 3) Отправляем сообщение!
 notify.send("Error", "some exception occurred")
 """
