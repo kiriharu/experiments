@@ -1,0 +1,37 @@
+name: Generate requirements.txt and dev-requirements.txt
+on:
+  push:
+    paths:
+      - pyproject.toml
+
+jobs:
+  generate_requirements:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Run image
+        uses: abatilo/actions-poetry@v2.0.0
+        with:
+          poetry-version: 1.1.7
+      - name: Generate requirements.txt
+        run: poetry export -f requirements.txt --output requirements.txt --without-hashes
+      - name: Generate dev-requirements.txt
+        run: poetry export -f requirements.txt --output dev-requirements.txt --without-hashes --dev
+      - name: Commit files
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add requirements.txt
+          git add dev-requirements.txt
+          git commit -m "[Generate requirements] Update requirements" -a
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
