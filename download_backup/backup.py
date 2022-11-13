@@ -39,7 +39,9 @@ class BackupDownloader:
             hostname=hostname,
             port=port,
             username=username,
-            password=password
+            password=password, 
+            allow_agent=False,
+            look_for_keys=False
         )
 
         last_backup_time = 0
