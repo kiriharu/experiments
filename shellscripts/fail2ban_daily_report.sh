@@ -21,4 +21,4 @@ $FOUND
 
 🖥 Hostname: $HOSTNAME"
 
-echo $MESSAGE
+echo "$MESSAGE"
